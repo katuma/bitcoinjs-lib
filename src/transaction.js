@@ -354,7 +354,9 @@
    * @returns Object Impact on wallet
    */
   Transaction.prototype.calcImpact = function (wallet) {
-    if (!(wallet instanceof Bitcoin.Wallet)) return BigInteger.ZERO;
+    if (!(wallet instanceof Bitcoin.Wallet)) 
+	return { sign: 1,
+		 value: BigInteger.ZERO};
 
     // Calculate credit to us from all outputs
     var valueOut = BigInteger.ZERO;
