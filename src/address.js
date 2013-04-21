@@ -1,10 +1,12 @@
+var addrType = (Settings && Settings.defaultSettings && Settings.defaultSettings.addrType) || 0;
+
 Bitcoin.Address = function (bytes) {
   if ("string" == typeof bytes) {
     bytes = Bitcoin.Address.decodeString(bytes);
   }
   this.hash = bytes;
 
-  this.version = 0x00;
+  this.version = addrType;
 };
 
 /**
@@ -49,7 +51,7 @@ Bitcoin.Address.decodeString = function (string) {
 
   var version = hash.shift();
 
-  if (version != 0) {
+  if (version != addrType) {
     throw "Version "+version+" not supported!";
   }
 
