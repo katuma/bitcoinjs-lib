@@ -190,7 +190,7 @@ Bitcoin.Wallet = (function () {
    * This will add a transaction to the wallet, updating its balance and
    * available unspent outputs.
    */
-  Wallet.prototype.process = function (tx) {
+  Wallet.prototype.process = function (tx, wrapper) {
     if (this.txIndex[tx.hash]) return;
 
     var j;
@@ -202,7 +202,7 @@ Bitcoin.Wallet = (function () {
       hash = Crypto.util.bytesToBase64(txout.script.simpleOutPubKeyHash());
       for (k = 0; k < this.addressHashes.length; k++) {
         if (this.addressHashes[k] === hash) {
-          this.unspentOuts.push({tx: tx, index: j, out: txout});
+          this.unspentOuts.push(wrapper({tx: tx, index: j, out: txout}));
           break;
         }
       }
@@ -230,37 +230,37 @@ Bitcoin.Wallet = (function () {
     this.txIndex[tx.hash] = tx;
   };
 
-  function Wallet.prototype.isGoodColor(idx) {
+  function isGoodColor(idx, currentColor) {
     var utxo = this.unspentOuts[i];
     // paying with btc - good color is actually uncolored utxos
-    if (!this.currentColor)
+    if (!currentColor)
       return !utxo.colorid;
     // otherwise color must match
-    return utxo.colorid && (utxo.colorid === this.currentColor);
+    return utxo.colorid && (utxo.colorid === currentColor);
   }
 
-  function Wallet.prototype.isColor(idx) {
-    return !!this.unspentOuts[i].colorid;
-  }
-
-
-  Wallet.prototype.getBalance = function () {
+  Wallet.prototype.getBalance = function (currentColor) {
     var balance = BigInteger.valueOf(0);
     for (var i = 0; i < this.unspentOuts.length; i++) {
-      if (!this.isGoodColor(i)) continue;
+      if (!isGoodColor(i, currentColor)) continue;
       var txout = this.unspentOuts[i].out;
       balance = balance.add(Bitcoin.Util.valueToBigInt(txout.value));
     }
     return balance;
   };
 
-  Wallet.prototype.createSend = function (address, sendValue, feeValue) {
+  // XXX UGLY! Refactor to for incremental txin/txout pairs (for p2ptrade later)
+  Wallet.prototype.createSend = function (address, sendValue, feeValue, currentColor) {
+    function isColor(idx) {
+      return !!this.unspentOuts[i].colorid;
+    }
+
     var selectedOuts = [];
-    var txValue = this.currentColor?sendValue:sendValue.add(feeValue);
+    var txValue = currentColor?sendValue:sendValue.add(feeValue);
     var availableValue = BigInteger.ZERO;
     var i;
     for (i = 0; i < this.unspentOuts.length; i++) {
-      if (!this.isGoodColor(i)) continue;
+      if (!isGoodColor(i, currentColor)) continue;
       selectedOuts.push(this.unspentOuts[i]);
       availableValue = availableValue.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
 
@@ -284,11 +284,11 @@ Bitcoin.Wallet = (function () {
       sendTx.addOutput(this.getNextAddress(), changeValue);
     }
 
-    if (this.currentColor && feeValue) {
+    if (currentColor && feeValue) {
       var fee = BigInteger.valueOf(feeValue);
       var feePaid = BigInteger.ZERO;
       for (i = 0; i < this.unspentOuts.length; i++) {
-        if (this.isColor(i)) continue;
+        if (isColor(i)) continue;
         selectedOuts.push(this.unspentOuts[i]);
         feePaid = feePaid.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
         if (feePaid.compareTo(fee) >= 0) break;
