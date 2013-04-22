@@ -230,9 +230,24 @@ Bitcoin.Wallet = (function () {
     this.txIndex[tx.hash] = tx;
   };
 
+  function Wallet.prototype.isGoodColor(idx) {
+    var utxo = this.unspentOuts[i];
+    // paying with btc - good color is actually uncolored utxos
+    if (!this.currentColor)
+      return !utxo.colorid;
+    // otherwise color must match
+    return utxo.colorid && (utxo.colorid === this.currentColor);
+  }
+
+  function Wallet.prototype.isColor(idx) {
+    return !!this.unspentOuts[i].colorid;
+  }
+
+
   Wallet.prototype.getBalance = function () {
     var balance = BigInteger.valueOf(0);
     for (var i = 0; i < this.unspentOuts.length; i++) {
+      if (!this.isGoodColor(i)) continue;
       var txout = this.unspentOuts[i].out;
       balance = balance.add(Bitcoin.Util.valueToBigInt(txout.value));
     }
@@ -241,10 +256,11 @@ Bitcoin.Wallet = (function () {
 
   Wallet.prototype.createSend = function (address, sendValue, feeValue) {
     var selectedOuts = [];
-    var txValue = sendValue.add(feeValue);
+    var txValue = this.currentColor?sendValue:sendValue.add(feeValue);
     var availableValue = BigInteger.ZERO;
     var i;
     for (i = 0; i < this.unspentOuts.length; i++) {
+      if (!this.isGoodColor(i)) continue;
       selectedOuts.push(this.unspentOuts[i]);
       availableValue = availableValue.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
 
@@ -254,7 +270,6 @@ Bitcoin.Wallet = (function () {
     if (availableValue.compareTo(txValue) < 0) {
       throw new Error('Insufficient funds.');
     }
-
 
     var changeValue = availableValue.subtract(txValue);
 
@@ -267,6 +282,25 @@ Bitcoin.Wallet = (function () {
     sendTx.addOutput(address, sendValue);
     if (changeValue.compareTo(BigInteger.ZERO) > 0) {
       sendTx.addOutput(this.getNextAddress(), changeValue);
+    }
+
+    if (this.currentColor && feeValue) {
+      var fee = BigInteger.valueOf(feeValue);
+      var feePaid = BigInteger.ZERO;
+      for (i = 0; i < this.unspentOuts.length; i++) {
+        if (this.isColor(i)) continue;
+        selectedOuts.push(this.unspentOuts[i]);
+        feePaid = feePaid.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
+        if (feePaid.compareTo(fee) >= 0) break;
+      }
+      if (feePaid.compareTo(fee) < 0) {
+        throw new Error('Insufficient BTC funds to pay the fee for colored transaction.');
+      }
+
+      var feeChange = feePaid.subtract(fee);
+      if (feeChange.compareTo(BigInteger.ZERO) > 0) {
+        sendTx.addOutput(this.getNextAddress(), feeChange);
+      }
     }
 
     var hashType = 1; // SIGHASH_ALL
