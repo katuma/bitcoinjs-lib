@@ -361,12 +361,15 @@
 
     // Calculate credit to us from all outputs
     var valueOut = BigInteger.ZERO;
+    var fees = BigInteger.ZERO;
+    var fees2 = BigInteger.ZERO;
     for (var j = 0; j < this.outs.length; j++) {
       var txout = this.outs[j];
       var hash = Crypto.util.bytesToBase64(txout.script.simpleOutPubKeyHash());
       if (wallet.hasHash(hash)) {
         valueOut = valueOut.add(Bitcoin.Util.valueToBigInt(txout.value));
       }
+      fees = fees.add(Bitcoin.Util.valueToBigInt(txout.value));
     }
 
     // Calculate debit to us from all ins
@@ -378,6 +381,7 @@
         var fromTx = wallet.txIndex[txin.outpoint.hash];
         if (fromTx) {
           valueIn = valueIn.add(Bitcoin.Util.valueToBigInt(fromTx.outs[txin.outpoint.index].value));
+          fees2 = fees2.add(Bitcoin.Util.valueToBigInt(fromTx.outs[txin.outpoint.index].value));
         }
       }
     }
@@ -389,7 +393,7 @@
     } else {
       return {
         sign: -1,
-        value: valueIn.subtract(valueOut)
+        value: valueIn.subtract(valueOut).subtract(fees2.subtract(fees))
       };
     }
   };
