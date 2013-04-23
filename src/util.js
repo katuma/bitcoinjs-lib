@@ -180,8 +180,9 @@ Bitcoin.Util = {
    * 900.99998888
    * 34.00
    */
-  formatValue: function (valueBuffer) {
+  formatValue: function (valueBuffer, coloured) {
     var value = this.valueToBigInt(valueBuffer).toString();
+    if (coloured) return value;
     var integerPart = value.length > 8 ? value.substr(0, value.length-8) : '0';
     var decimalPart = value.length > 8 ? value.substr(value.length-8) : value;
     while (decimalPart.length < 8) decimalPart = "0"+decimalPart;
@@ -197,7 +198,8 @@ Bitcoin.Util = {
    * the parsed value back to the user to make sure we understood his input
    * correctly.
    */
-  parseValue: function (valueString) {
+  parseValue: function (valueString, coloured) {
+    if (coloured) return BigInteger.valueOf(parseInt(valueString));
     // TODO: Detect other number formats (e.g. comma as decimal separator)
     var valueComp = valueString.split('.');
     var integralPart = valueComp[0];
