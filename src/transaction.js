@@ -10,7 +10,7 @@
     this.block = null;
 
     if (doc) {
-      if (doc.color) this.color = doc.color;
+      this.color = doc.color;
       if (doc.hash) this.hash = doc.hash;
       if (doc.version) this.version = doc.version;
       if (doc.lock_time) this.lock_time = doc.lock_time;

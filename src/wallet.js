@@ -249,7 +249,9 @@ Bitcoin.Wallet = (function () {
     return balance;
   };
 
-  // XXX UGLY! Refactor to for incremental txin/txout pairs (for p2ptrade later)
+  // XXX UGLY! Refactor for incremental txin/txout pairs (for p2ptrade later)
+  // We reuse current address for everything, otherwise stuff mysteriously breaks
+  // as webui will happily drop newly generated addresses :(
   Wallet.prototype.createSend = function (address, sendValue, feeValue, currentColor) {
     var selectedOuts = [];
     var txValue = currentColor?sendValue:sendValue.add(feeValue);
@@ -273,7 +275,7 @@ Bitcoin.Wallet = (function () {
 
     sendTx.addOutput(address, sendValue);
     if (changeValue.compareTo(BigInteger.ZERO) > 0) {
-      sendTx.addOutput(this.getNextAddress(), changeValue);
+      sendTx.addOutput(this.getCurAddress(), changeValue);
     }
 
     if (currentColor && feeValue) {
@@ -291,7 +293,7 @@ Bitcoin.Wallet = (function () {
       }
       var feeChange = feePaid.subtract(fee);
       if (feeChange.compareTo(BigInteger.ZERO) > 0) {
-        sendTx.addOutput(this.getNextAddress(), feeChange);
+        sendTx.addOutput(this.getCurAddress(), feeChange);
       }
     }
 
