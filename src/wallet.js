@@ -232,9 +232,9 @@ Bitcoin.Wallet = (function () {
 
   Wallet.prototype.isGoodColor = function(i, currentColor) {
     var utxo = this.unspentOuts[i];
-    // paying with btc - good color is actually uncolored utxos
+    // paying with btc - good color is actually utxos with determined coinbase
     if (!currentColor)
-      return !utxo.color;
+      return utxo.color == false;
     // otherwise color must match
     return utxo.color && (utxo.color === currentColor);
   };
@@ -251,11 +251,6 @@ Bitcoin.Wallet = (function () {
 
   // XXX UGLY! Refactor to for incremental txin/txout pairs (for p2ptrade later)
   Wallet.prototype.createSend = function (address, sendValue, feeValue, currentColor) {
-    var self = this;
-    function isColor(i) {
-      return !!self.unspentOuts[i].color;
-    }
-
     var selectedOuts = [];
     var txValue = currentColor?sendValue:sendValue.add(feeValue);
     var availableValue = BigInteger.ZERO;
@@ -285,7 +280,8 @@ Bitcoin.Wallet = (function () {
       var fee = BigInteger.valueOf(feeValue);
       var feePaid = BigInteger.ZERO;
       for (i = 0; i < this.unspentOuts.length; i++) {
-        if (isColor(i)) continue;
+        // output is colored, or color not yet determined
+        if ((this.unspentOuts[i].color) || (this.unspentOuts[i].color != false)) continue;
         selectedOuts.push(this.unspentOuts[i]);
         feePaid = feePaid.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
         if (feePaid.compareTo(fee) >= 0) break;
