@@ -11,8 +11,8 @@ TransactionDatabase.prototype.addTransaction = function (tx) {
 };
 
 TransactionDatabase.prototype.addTransactionNoUpdate = function (tx) {
-  console.log('adding tx');
-  console.log(tx);
+//  console.log('adding tx');
+//  console.log(tx);
   // Return if transaction is already known
   if (this.txIndex[tx.hash]) {
     return;

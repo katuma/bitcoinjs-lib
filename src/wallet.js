@@ -275,7 +275,7 @@ Bitcoin.Wallet = (function () {
 
     sendTx.addOutput(address, sendValue);
     if (changeValue.compareTo(BigInteger.ZERO) > 0) {
-      sendTx.addOutput(this.getCurAddress(), changeValue);
+      sendTx.addOutput(this.getNextAddress(), changeValue);
     }
 
     if (currentColor && feeValue) {
@@ -293,7 +293,7 @@ Bitcoin.Wallet = (function () {
       }
       var feeChange = feePaid.subtract(fee);
       if (feeChange.compareTo(BigInteger.ZERO) > 0) {
-        sendTx.addOutput(this.getCurAddress(), feeChange);
+        sendTx.addOutput(this.getNextAddress(), feeChange);
       }
     }
 

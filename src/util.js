@@ -182,13 +182,16 @@ Bitcoin.Util = {
    */
   formatValue: function (valueBuffer, coloured) {
     var value = this.valueToBigInt(valueBuffer).toString();
-    if (coloured) return value;
+    if (coloured) return value + ' ' + coloured;
     var integerPart = value.length > 8 ? value.substr(0, value.length-8) : '0';
     var decimalPart = value.length > 8 ? value.substr(value.length-8) : value;
     while (decimalPart.length < 8) decimalPart = "0"+decimalPart;
     decimalPart = decimalPart.replace(/0*$/, '');
     while (decimalPart.length < 2) decimalPart += "0";
-    return integerPart+"."+decimalPart;
+    var suffix = '';
+    if (coloured!=undefined)
+	suffix = 'BTC';
+    return integerPart+"."+decimalPart + suffix;
   },
 
   /**

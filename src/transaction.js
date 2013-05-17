@@ -241,9 +241,16 @@
    * other:
    *   This method was unable to detect what the transaction does. Either it
    */
-  Transaction.prototype.analyze = function (wallet) {
-    if (!(wallet instanceof Bitcoin.Wallet)) return null;
 
+  Transaction.prototype.is_issue = function (cm) {
+    var h = Crypto.util.bytesToHex(Crypto.util.base64ToBytes(this.hash).reverse());
+    return cm.is_issue(h)
+  }
+
+  Transaction.prototype.analyze = function (wallet,cm) {
+    if (!(wallet instanceof Bitcoin.Wallet)) return null;
+    if (this.is_issue(cm)) return {type:"issue"};
+  
     var allFromMe = true,
     allToMe = true,
     firstRecvHash = null,
@@ -299,8 +306,8 @@
    * This is merely a convenience function. Clients should consider implementing
    * this themselves based on their UI, I18N, etc.
    */
-  Transaction.prototype.getDescription = function (wallet) {
-    var analysis = this.analyze(wallet);
+  Transaction.prototype.getDescription = function (wallet, cm) {
+    var analysis = this.analyze(wallet,cm);
 
     if (!analysis) return "";
 
@@ -316,6 +323,11 @@
     case 'self':
       return "Payment to yourself";
       break;
+
+    case 'issue':
+      return "Issue of currency/asset";
+      break;
+
 
     case 'other':
     default:
@@ -354,7 +366,7 @@
    *
    * @returns Object Impact on wallet
    */
-  Transaction.prototype.calcImpact = function (wallet) {
+  Transaction.prototype.calcImpact = function (wallet,cm) {
     if (!(wallet instanceof Bitcoin.Wallet)) 
 	return { sign: 1,
 		 value: BigInteger.ZERO};
@@ -385,15 +397,23 @@
         }
       }
     }
+    if (cm && this.is_issue(cm))
+        return {
+            sign: 1,
+            value: Bitcoin.Util.valueToBigInt(this.outs[0].value),
+            fees: fees2.subtract(fees)
+        }
     if (valueOut.compareTo(valueIn) >= 0) {
       return {
         sign: 1,
-        value: valueOut.subtract(valueIn)
+        value: valueOut.subtract(valueIn),
+        fees: BigInteger.ZERO
       };
     } else {
       return {
         sign: -1,
-        value: valueIn.subtract(valueOut).subtract(fees2.subtract(fees))
+        value: valueIn.subtract(valueOut).subtract(fees2.subtract(fees)),
+        fees: fees2.subtract(fees)
       };
     }
   };
