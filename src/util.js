@@ -202,7 +202,7 @@ Bitcoin.Util = {
    * correctly.
    */
   parseValue: function (valueString, coloured) {
-    if (coloured) return BigInteger.valueOf(parseInt(valueString));
+    if (coloured) return new BigInteger(valueString);
     // TODO: Detect other number formats (e.g. comma as decimal separator)
     var valueComp = valueString.split('.');
     var integralPart = valueComp[0];
