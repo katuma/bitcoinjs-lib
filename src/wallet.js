@@ -249,6 +249,26 @@ Bitcoin.Wallet = (function () {
     return balance;
   };
 
+  Wallet.prototype.selectCoins = function (rqValue, color) {
+    var selectedOuts = [];
+    var selectedValue = BigInteger.ZERO;
+    var i;
+    for (i = 0; i < this.unspentOuts.length; i++) {
+      if (!this.isGoodColor(i, color)) continue;
+      selectedOuts.push(this.unspentOuts[i]);
+      selectedValue = selectedValue.add(Bitcoin.Util.valueToBigInt(this.unspentOuts[i].out.value));
+
+      if (selectedValue.compareTo(rqValue) >= 0) break;
+    }
+    if (selectedValue.compareTo(rqValue) < 0) 
+        return null;
+    else 
+        return {
+            outs: selectedOuts,
+            value: selectedValue
+        };
+  };
+
   // XXX UGLY! Refactor for incremental txin/txout pairs (for p2ptrade later)
   // We reuse current address for everything, otherwise stuff mysteriously breaks
   // as webui will happily drop newly generated addresses :(
